@@ -1,0 +1,51 @@
+@inherits LayoutComponentBase
+@inject AuthApiClient AuthApi
+@inject NavigationManager Navigation
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-2">OTP Giriş Paneli</MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@DarkModeIcon" Color="Color.Inherit"
+                       OnClick="@(() => App?.ToggleDarkMode())" title="Tema" />
+        <AuthorizeView>
+            <Authorized>
+                <MudChip T="string" Icon="@Icons.Material.Filled.Phone" Color="Color.Default" Variant="Variant.Text">
+                    @context.User.Identity?.Name
+                </MudChip>
+                <MudButton Color="Color.Inherit" StartIcon="@Icons.Material.Filled.Logout"
+                           OnClick="@LogoutAsync">Çıkış</MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <MudNavMenu>
+            <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Ana Sayfa</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    [CascadingParameter] private App? App { get; set; }
+
+    private bool _drawerOpen = true;
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private string DarkModeIcon =>
+        App?.IsDarkMode == true ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode;
+
+    private async Task LogoutAsync()
+    {
+        await AuthApi.LogoutAsync();
+        Navigation.NavigateTo("login");
+    }
+}

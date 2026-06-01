@@ -1,0 +1,50 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="@IsDarkMode" Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<CascadingValue Value="this">
+    <CascadingAuthenticationState>
+        <Router AppAssembly="@typeof(App).Assembly">
+            <Found Context="routeData">
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                    <NotAuthorized>
+                        @* Giriş yapılmamışsa login sayfasına yönlendir *@
+                        <RedirectToLogin />
+                    </NotAuthorized>
+                    <Authorizing>
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    </Authorizing>
+                </AuthorizeRouteView>
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </Found>
+            <NotFound>
+                <PageTitle>Bulunamadı</PageTitle>
+                <LayoutView Layout="@typeof(MainLayout)">
+                    <MudText Typo="Typo.h6" Class="pa-8">Aradığınız sayfa bulunamadı.</MudText>
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </CascadingAuthenticationState>
+</CascadingValue>
+
+@code {
+    private MudThemeProvider _themeProvider = default!;
+
+    // Dark/Light mode tüm uygulamada paylaşılır (MainLayout'taki buton bunu değiştirir).
+    public bool IsDarkMode { get; set; } = true;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight { Primary = "#1976d2" },
+        PaletteDark = new PaletteDark { Primary = "#90caf9" }
+    };
+
+    public void ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,82 @@
+@page "/"
+@attribute [Authorize]
+@inject AuthApiClient AuthApi
+
+<PageTitle>Ana Sayfa</PageTitle>
+
+<MudGrid Justify="Justify.Center">
+    <MudItem xs="12" sm="10" md="8">
+        <MudPaper Elevation="2" Class="pa-6" Style="border-radius: 16px;">
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
+                <MudText Typo="Typo.h5" Class="ml-3">Giriş Başarılı</MudText>
+            </div>
+
+            <AuthorizeView>
+                <Authorized>
+                    <MudText Typo="Typo.body1">
+                        Hoş geldiniz, <b>@context.User.Identity?.Name</b>. Bu sayfa yalnızca giriş yapmış
+                        kullanıcılara açıktır (<code>[Authorize]</code> ile korunur).
+                    </MudText>
+                </Authorized>
+            </AuthorizeView>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Sunucudan Doğrulanan Kimlik (korumalı <code>/api/auth/me</code>)</MudText>
+            @if (_loadingMe)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+            }
+            else if (_me is not null)
+            {
+                <MudSimpleTable Dense="true" Bordered="true" Class="mb-4">
+                    <tbody>
+                        <tr><td><b>Kullanıcı Id</b></td><td>@_me.UserId</td></tr>
+                        <tr><td><b>Telefon</b></td><td>@_me.PhoneNumber</td></tr>
+                    </tbody>
+                </MudSimpleTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                    Kimlik bilgisi alınamadı (API çalışıyor mu / DB bağlı mı?).
+                </MudAlert>
+            }
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Responsive Test (MudBlazor Grid)</MudText>
+            <MudGrid>
+                @foreach (var i in Enumerable.Range(1, 4))
+                {
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudCard Outlined="true">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6">Kart @i</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    Mobil/tablet/masaüstünde otomatik sığar.
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private MeResponse? _me;
+    private bool _loadingMe = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _me = await AuthApi.GetMeAsync();
+        }
+        finally
+        {
+            _loadingMe = false;
+        }
+    }
+}

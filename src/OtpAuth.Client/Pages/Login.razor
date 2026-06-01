@@ -1,0 +1,183 @@
+@page "/login"
+@layout LoginLayout
+@inject AuthApiClient AuthApi
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Giriş</PageTitle>
+
+@if (_step == Step.Phone)
+{
+    <MudForm @ref="_phoneForm">
+        <MudTextField @bind-Value="_phone"
+                      Label="Telefon Numarası"
+                      Placeholder="05XX XXX XX XX"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Phone"
+                      Variant="Variant.Outlined"
+                      InputMode="InputMode.tel"
+                      Required="true"
+                      RequiredError="Telefon numarası zorunludur"
+                      Immediate="true" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-6"
+                   Size="Size.Large" OnClick="@RequestOtpAsync" Disabled="_loading">
+            @if (_loading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Gönderiliyor...</MudText>
+            }
+            else
+            {
+                <text>Kod Gönder</text>
+            }
+        </MudButton>
+    </MudForm>
+}
+else
+{
+    <MudForm @ref="_codeForm">
+        <MudText Typo="Typo.body2" Class="mb-4" Align="Align.Center">
+            <b>@_phone</b> numarasına gönderilen 6 haneli kodu girin.
+        </MudText>
+
+        <MudTextField @bind-Value="_code"
+                      Label="Doğrulama Kodu"
+                      Placeholder="______"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Pin"
+                      Variant="Variant.Outlined"
+                      InputMode="InputMode.numeric"
+                      MaxLength="6"
+                      Required="true"
+                      RequiredError="Kod zorunludur"
+                      Immediate="true" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-6"
+                   Size="Size.Large" OnClick="@VerifyOtpAsync" Disabled="_loading">
+            @if (_loading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Doğrulanıyor...</MudText>
+            }
+            else
+            {
+                <text>Giriş Yap</text>
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true" Class="mt-2"
+                   OnClick="@RequestOtpAsync" Disabled="@(_loading || _resendSeconds > 0)">
+            @if (_resendSeconds > 0)
+            {
+                <text>Tekrar gönder (@_resendSeconds sn)</text>
+            }
+            else
+            {
+                <text>Kodu Tekrar Gönder</text>
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" FullWidth="true"
+                   OnClick="@BackToPhone" Disabled="_loading">
+            Numarayı Değiştir
+        </MudButton>
+    </MudForm>
+}
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4" Dense="true">@_error</MudAlert>
+}
+
+@code {
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    private enum Step { Phone, Code }
+    private Step _step = Step.Phone;
+
+    private MudForm _phoneForm = default!;
+    private MudForm _codeForm = default!;
+
+    private string _phone = string.Empty;
+    private string _code = string.Empty;
+    private bool _loading;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Zaten girişliyse doğrudan içeri al.
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+            NavigateAfterLogin();
+    }
+
+    private async Task RequestOtpAsync()
+    {
+        _error = null;
+        await _phoneForm.ValidateAsync();
+        if (!_phoneForm.IsValid) return;
+
+        _loading = true;
+        try
+        {
+            _error = await AuthApi.RequestOtpAsync(_phone);
+            if (_error is null)
+            {
+                _step = Step.Code;
+                _code = string.Empty;
+                _ = StartResendCountdownAsync();
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VerifyOtpAsync()
+    {
+        _error = null;
+        await _codeForm.ValidateAsync();
+        if (!_codeForm.IsValid) return;
+
+        _loading = true;
+        try
+        {
+            _error = await AuthApi.VerifyOtpAsync(_phone, _code);
+            if (_error is null)
+                NavigateAfterLogin();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private int _resendSeconds;
+
+    /// <summary>Kod gönderildikten sonra 60 sn boyunca "tekrar gönder"i kilitler.</summary>
+    private async Task StartResendCountdownAsync()
+    {
+        _resendSeconds = 60;
+        while (_resendSeconds > 0 && _step == Step.Code)
+        {
+            await Task.Delay(1000);
+            _resendSeconds--;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void BackToPhone()
+    {
+        _step = Step.Phone;
+        _error = null;
+        _resendSeconds = 0;
+    }
+
+    private void NavigateAfterLogin()
+    {
+        var target = string.IsNullOrWhiteSpace(ReturnUrl) ? "" : Uri.UnescapeDataString(ReturnUrl);
+        Navigation.NavigateTo(target, forceLoad: false);
+    }
+}
