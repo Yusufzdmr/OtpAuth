@@ -4,65 +4,89 @@
 
 <PageTitle>Ana Sayfa</PageTitle>
 
-<MudGrid Justify="Justify.Center">
-    <MudItem xs="12" sm="10" md="8">
-        <MudPaper Elevation="2" Class="pa-6" Style="border-radius: 16px;">
-            <div class="d-flex align-center mb-4">
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Large" />
-                <MudText Typo="Typo.h5" Class="ml-3">Giriş Başarılı</MudText>
-            </div>
+<MudText Typo="Typo.h4" GutterBottom="true">Hoş geldiniz 👋</MudText>
+<MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6">
+    Başarıyla giriş yaptınız. Burası yalnızca kimliği doğrulanmış kullanıcılara açık güvenli panodur.
+</MudText>
 
-            <AuthorizeView>
-                <Authorized>
-                    <MudText Typo="Typo.body1">
-                        Hoş geldiniz, <b>@context.User.Identity?.Name</b>. Bu sayfa yalnızca giriş yapmış
-                        kullanıcılara açıktır (<code>[Authorize]</code> ile korunur).
-                    </MudText>
-                </Authorized>
-            </AuthorizeView>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="height:100%; border-radius:14px;">
+            <MudCardContent>
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Phone" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1">Telefon</MudText>
+                </div>
+                <MudText Typo="Typo.h6">@(_me?.PhoneNumber ?? "—")</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Giriş yapılan numara</MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
 
-            <MudDivider Class="my-4" />
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="height:100%; border-radius:14px;">
+            <MudCardContent>
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Success" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1">Oturum Durumu</MudText>
+                </div>
+                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">Aktif</MudChip>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="d-block mt-2">
+                    Oturum JWT ile korunuyor
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
 
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Sunucudan Doğrulanan Kimlik (korumalı <code>/api/auth/me</code>)</MudText>
-            @if (_loadingMe)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-            }
-            else if (_me is not null)
-            {
-                <MudSimpleTable Dense="true" Bordered="true" Class="mb-4">
-                    <tbody>
-                        <tr><td><b>Kullanıcı Id</b></td><td>@_me.UserId</td></tr>
-                        <tr><td><b>Telefon</b></td><td>@_me.PhoneNumber</td></tr>
-                    </tbody>
-                </MudSimpleTable>
-            }
-            else
-            {
-                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
-                    Kimlik bilgisi alınamadı (API çalışıyor mu / DB bağlı mı?).
-                </MudAlert>
-            }
-
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Responsive Test (MudBlazor Grid)</MudText>
-            <MudGrid>
-                @foreach (var i in Enumerable.Range(1, 4))
-                {
-                    <MudItem xs="12" sm="6" md="3">
-                        <MudCard Outlined="true">
-                            <MudCardContent>
-                                <MudText Typo="Typo.h6">Kart @i</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                    Mobil/tablet/masaüstünde otomatik sığar.
-                                </MudText>
-                            </MudCardContent>
-                        </MudCard>
-                    </MudItem>
-                }
-            </MudGrid>
-        </MudPaper>
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard Elevation="2" Style="height:100%; border-radius:14px;">
+            <MudCardContent>
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Security" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1">Kimlik Doğrulama</MudText>
+                </div>
+                <MudText Typo="Typo.h6">JWT (Bearer)</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Şifresiz OTP girişi</MudText>
+            </MudCardContent>
+        </MudCard>
     </MudItem>
 </MudGrid>
+
+<MudCard Elevation="2" Class="mt-6" Style="border-radius:14px;">
+    <MudCardContent>
+        <div class="d-flex align-center mb-3">
+            <MudIcon Icon="@Icons.Material.Filled.Badge" Color="Color.Primary" Class="mr-2" />
+            <MudText Typo="Typo.subtitle1">Sunucudan Doğrulanan Kimlik</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.caption" Color="Color.Secondary"><code>GET /api/auth/me</code></MudText>
+        </div>
+
+        @if (_loadingMe)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_me is not null)
+        {
+            <MudSimpleTable Dense="true" Hover="true" Elevation="0">
+                <tbody>
+                    <tr><td style="width:160px"><b>Kullanıcı Id</b></td><td><code>@_me.UserId</code></td></tr>
+                    <tr><td><b>Telefon</b></td><td>@_me.PhoneNumber</td></tr>
+                </tbody>
+            </MudSimpleTable>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                Kimlik bilgisi alınamadı (API çalışıyor mu / DB bağlı mı?).
+            </MudAlert>
+        }
+    </MudCardContent>
+</MudCard>
+
+<MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-6">
+    Bu ekran, OTP giriş altyapısının korumalı ana sayfasıdır. Uygulamaya özel içerik ve sayfalar
+    bu güvenli temel üzerine eklenebilir.
+</MudAlert>
 
 @code {
     private MeResponse? _me;
