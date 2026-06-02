@@ -99,12 +99,39 @@ dotnet ef database update --project src/OtpAuth.Infrastructure --startup-project
 
 ---
 
-## 7. SMS Ayarı (opsiyonel — doküman gelince)
+## 7. SMS Ayarı (ÖzTek Haberleşme — entegrasyon hazır)
+
+ÖzTek SMS entegrasyonu **kodda tamamdır** (`SmsSender.cs`). Yalnızca hesap bilgilerini girmen yeterli.
 
 `src/OtpAuth.Api/appsettings.json` → `Sms` bölümü:
-- Doküman **yoksa**: `Enabled: false` bırak → kod API konsoluna yazılır (test edilebilir).
-- Doküman **varsa**: `BaseUrl`, `ApiKey`, `Sender` doldur, `Enabled: true` yap ve
-  `src/OtpAuth.Infrastructure/Sms/SmsSender.cs → SendViaProviderAsync` içine gerçek çağrıyı ekle.
+
+```json
+"Sms": {
+  "Enabled": true,
+  "BaseUrl": "http://www.ozteksms.com/panel/smsgonder1Npost.php",
+  "Kno": "<kullanıcı kodunuz>",
+  "Kulad": "<kullanıcı adınız>",
+  "Sifre": "<şifreniz>",
+  "Gonderen": "<onaylı originatör başlığı>",
+  "Tur": "Normal"
+}
+```
+
+| Alan | Açıklama |
+|---|---|
+| `Enabled` | `false` → gerçek SMS gitmez, kod API konsoluna yazılır (test). `true` → ÖzTek'e gönderir. |
+| `Kno` | ÖzTek panel: *Kullanıcı İşlemleri → Kullanıcı Bilgileri* |
+| `Kulad` / `Sifre` | ÖzTek kullanıcı adı / şifre |
+| `Gonderen` | ÖzTek tarafından **onaylı** gönderen başlığı (3-11 karakter, Türkçe/özel karakter olamaz) |
+| `Tur` | `Normal` (160 krk) veya `Turkce` (Türkçe karakter destekli) |
+
+**ÖzTek panelinde yapılması gerekenler** (bir kez):
+1. *Kullanıcı Bilgileri* → "API ile SMS gönderme" = **Evet**.
+2. Sunucunuzun **dış IP adresini** izinli IP olarak ekleyin (güvenlik).
+3. Kullanacağınız **gönderen başlığı (originatör) onaylı** olmalı.
+
+> Numara formatı otomatik dönüştürülür: `+905xx...` / `05xx...` / `5xx...` → ÖzTek'in beklediği 10 hane (`5xx...`).
+> Detaylı API referansı: kök klasördeki **`oztekentegrasyon.pdf`**.
 
 ---
 
