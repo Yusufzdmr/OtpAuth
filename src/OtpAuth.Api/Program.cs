@@ -36,9 +36,25 @@ const string ClientCors = "ClientCors";
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(ClientCors, policy =>
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // Geliştirmede herhangi bir localhost portuna izin ver (launch profili/port farkları
+            // CORS'a takılmasın). Bearer token kullanıldığı için credential gerekmez.
+            policy.SetIsOriginAllowed(origin =>
+                      Uri.TryCreate(origin, UriKind.Absolute, out var u)
+                      && (u.Host == "localhost" || u.Host == "127.0.0.1"))
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            // Production: yalnızca appsettings'teki izinli origin'ler.
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [])
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+    });
 });
 
 // --- Swagger ---

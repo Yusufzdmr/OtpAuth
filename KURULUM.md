@@ -137,20 +137,31 @@ dotnet ef database update --project src/OtpAuth.Infrastructure --startup-project
 
 ## 8. Çalıştırma
 
+> ⚠️ **Önemli:** API **ve** Client **ikisi birden** çalışmalı. Client, API'yi
+> `https://localhost:7100` adresinde arar. API bu porttan açılmazsa tarayıcı
+> konsolunda `ERR_CONNECTION_REFUSED` / `Failed to fetch` hatası alırsın.
+
 ### Visual Studio (önerilen)
 1. Solution'a sağ tık → **Configure Startup Projects** → **Multiple startup projects**.
 2. `OtpAuth.Api` ve `OtpAuth.Client` için **Action = Start** seç → OK.
-3. **F5**.
+3. `OtpAuth.Api` için profil **https** olmalı (üst araç çubuğundaki açılır menüden).
+4. **F5**.
 
 ### CLI (iki ayrı terminal)
 ```powershell
 # Terminal 1 — API  (https://localhost:7100, Swagger: /swagger)
-dotnet run --project src/OtpAuth.Api
+# DİKKAT: profil belirtmezsen sadece 5100 açılır; Client 7100'ü arar → "https" profili şart!
+dotnet run --project src/OtpAuth.Api --launch-profile https
 
 # Terminal 2 — Client (https://localhost:7200)
-dotnet run --project src/OtpAuth.Client
+# Not: profil belirtmezsen 5159 portunda açılır. https profili 7200'ü açar.
+dotnet run --project src/OtpAuth.Client --launch-profile https
 ```
+> Not: API artık geliştirme modunda **herhangi bir localhost portuna** CORS izni verir,
+> yani client farklı portta açılsa bile CORS hatası almazsın (production yine kilitli).
 Tarayıcı: `https://localhost:7200` → otomatik `/login` ekranına gider.
+
+> İlk çalıştırmada HTTPS sertifika hatası olursa: `dotnet dev-certs https --trust`
 
 ---
 
@@ -171,3 +182,4 @@ Tarayıcı: `https://localhost:7200` → otomatik `/login` ekranına gider.
 | HTTPS sertifika uyarısı | `dotnet dev-certs https --trust` çalıştır |
 | 401 / token çalışmıyor | `Jwt` ayarları API ve token üretiminde aynı olmalı (tek kaynak: appsettings) |
 | `request-otp` 500 veriyor | Genelde DB yok/migration uygulanmamış → 6. adımı yap |
+| `ERR_CONNECTION_REFUSED` / `Failed to fetch` | **API çalışmıyor veya 7100'de değil.** API'yi `--launch-profile https` ile başlat; VS'te API profilini **https** yap. API ve Client aynı anda açık olmalı. |
