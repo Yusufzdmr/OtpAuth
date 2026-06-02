@@ -168,6 +168,12 @@ SMS entegrasyonu, gerçek ağ/kimlik bilgisi olmadan sahte HTTP handler ile doğ
 
 ---
 
+## 📄 Lisans
+
+Bu proje **MIT** lisansı ile lisanslanmıştır — bkz. [LICENSE](LICENSE).
+
+---
+
 <div align="center">
 
 Detaylı kurulum için **[KURULUM.md](KURULUM.md)** dosyasına bakın.
