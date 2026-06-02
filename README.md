@@ -22,6 +22,16 @@ Clean Architecture, JWT, EF Core ve değiştirilebilir SMS sağlayıcı entegras
 
 OtpAuth, kullanıcıların **parola yerine** telefonlarına gelen tek kullanımlık kod (OTP) ile giriş yaptığı, uçtan uca bir kimlik doğrulama uygulamasıdır. SMS gönderimi soyutlanmış bir arayüz üzerinden yapılır; bu sayede **sağlayıcı değiştirmek tek bir sınıfı düzenlemek kadar kolaydır** (referans entegrasyon: ÖzTek Haberleşme).
 
+## 📸 Ekran Görüntüleri
+
+<div align="center">
+
+| Giriş — OTP kod doğrulama | Korumalı Dashboard |
+|:--:|:--:|
+| <img src="docs/screenshots/login.png" width="420" alt="OTP kod doğrulama ekranı" /> | <img src="docs/screenshots/dashboard.png" width="420" alt="Korumalı dashboard" /> |
+
+</div>
+
 ## ✨ Özellikler
 
 - 📱 **Şifresiz OTP girişi** — telefon + 6 haneli kod akışı
