@@ -138,14 +138,24 @@ dotnet ef database update --project src/OtpAuth.Infrastructure --startup-project
 ## 8. Çalıştırma
 
 > ⚠️ **Önemli:** API **ve** Client **ikisi birden** çalışmalı. Client, API'yi
-> `https://localhost:7100` adresinde arar. API bu porttan açılmazsa tarayıcı
-> konsolunda `ERR_CONNECTION_REFUSED` / `Failed to fetch` hatası alırsın.
+> `https://localhost:7100` adresinde arar. Sadece Client'ı çalıştırırsan (API kapalı)
+> tarayıcı konsolunda `ERR_CONNECTION_REFUSED` hatası ve ekranda
+> "Sunucuya ulaşılamıyor" uyarısı alırsın.
 
-### Visual Studio (önerilen)
+### En kolay yol — tek tıkla başlatma (önerilen)
+Kök klasördeki hazır scripti çalıştır; API ve Client'ı ayrı pencerelerde,
+doğru profillerle (7100 / 7200) otomatik başlatır ve sertifikayı ayarlar:
+```powershell
+.\baslat.ps1
+```
+> Script engellenirse bir kez: `Set-ExecutionPolicy -Scope Process Bypass` çalıştırıp tekrar dene.
+
+### Visual Studio
 1. Solution'a sağ tık → **Configure Startup Projects** → **Multiple startup projects**.
 2. `OtpAuth.Api` ve `OtpAuth.Client` için **Action = Start** seç → OK.
-3. `OtpAuth.Api` için profil **https** olmalı (üst araç çubuğundaki açılır menüden).
-4. **F5**.
+3. **F5**.
+> ⚠️ Sadece tek projeyi (örn. yalnız Client) seçip Run yaparsan API başlamaz → bağlantı hatası alırsın.
+> Artık API'nin varsayılan profili **https** (7100) olduğu için ayrıca profil seçmen gerekmez.
 
 ### CLI (iki ayrı terminal)
 ```powershell
