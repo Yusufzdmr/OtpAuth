@@ -1,107 +1,165 @@
-# OtpAuth — Blazor WASM (.NET 9) + Microsoft Identity ile Şifresiz OTP Girişi
+<div align="center">
 
-Telefon numarası + 6 haneli tek kullanımlık kod (OTP) ile **şifresiz** giriş.
-Onion (Clean) mimari, .NET 9 Web API, EF Core (MSSQL), Microsoft Identity, JWT ve MudBlazor.
+# 🔐 OtpAuth — Şifresiz SMS (OTP) Giriş Sistemi
 
-## Mimari (Onion / Clean Architecture)
+**Passwordless SMS authentication built with .NET 9 & Blazor WebAssembly**
 
-```
-OtpAuth.sln
-└── src/
-    ├── OtpAuth.Domain          → Entity'ler (OtpCode). Hiçbir dış bağımlılık yok.
-    ├── OtpAuth.Application      → Soyutlamalar (ISmsSender, IJwtTokenGenerator, IAuthService), DTO'lar, Result.
-    ├── OtpAuth.Infrastructure   → EF Core DbContext, Identity, JWT üretimi, AuthService, SMS gönderici.
-    ├── OtpAuth.Api              → .NET 9 Web API (AuthController), JWT auth, CORS, Swagger.
-    └── OtpAuth.Client           → Blazor WASM + MudBlazor (Dark/Light, responsive), 2 layout, AuthState.
-```
+Telefon numarası + tek kullanımlık 6 haneli kod ile parolasız giriş.
+Clean Architecture, JWT, EF Core ve değiştirilebilir SMS sağlayıcı entegrasyonu.
 
-Bağımlılık yönü: `Api → Infrastructure → Application → Domain` (içe doğru).
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)
+![Blazor](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp&logoColor=white)
+![EF Core](https://img.shields.io/badge/EF%20Core-MSSQL-CC2927?logo=microsoftsqlserver&logoColor=white)
+![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-10%20passing-success)
 
-## Giriş Akışı
-
-1. Kullanıcı telefon numarasını girer → `POST /api/auth/request-otp`
-2. Sunucu kriptografik 6 haneli kod üretir, **MSSQL**'e yazar ve **SMS** ile gönderir.
-3. Kullanıcı kodu girer → `POST /api/auth/verify-otp`
-4. Kod doğruysa **JWT** üretilir; client token'ı `localStorage`'a yazar ve oturum açılır.
+</div>
 
 ---
 
-## API Uçları
+## 📖 Genel Bakış
+
+OtpAuth, kullanıcıların **parola yerine** telefonlarına gelen tek kullanımlık kod (OTP) ile giriş yaptığı, uçtan uca bir kimlik doğrulama uygulamasıdır. SMS gönderimi soyutlanmış bir arayüz üzerinden yapılır; bu sayede **sağlayıcı değiştirmek tek bir sınıfı düzenlemek kadar kolaydır** (referans entegrasyon: ÖzTek Haberleşme).
+
+## ✨ Özellikler
+
+- 📱 **Şifresiz OTP girişi** — telefon + 6 haneli kod akışı
+- 🔑 **JWT tabanlı oturum** — stateless, `localStorage`'da saklanır, 401'de otomatik logout
+- 🧅 **Clean / Onion mimari** — Domain · Application · Infrastructure · API · Client
+- 🔌 **Değiştirilebilir SMS sağlayıcı** — `ISmsSender` arayüzü; ÖzTek entegrasyonu hazır
+- 🛡️ **Güvenlik** — kriptografik kod üretimi, deneme limiti, tek aktif kod, numara sızıntısı önleme
+- 🎨 **Modern arayüz** — MudBlazor, responsive, Dark/Light
+- 🧪 **Birim testleri** — xUnit ile SMS entegrasyon mantığı doğrulanmış
+- 🚀 **Tek tıkla çalıştırma** — `baslat.ps1` ile API + Client birlikte başlar
+
+## 🛠️ Teknolojiler
+
+`C#` · `.NET 9` · `Blazor WebAssembly` · `ASP.NET Core Web API` · `Microsoft Identity` · `JWT Bearer` · `Entity Framework Core` · `MSSQL` · `MudBlazor` · `xUnit`
+
+---
+
+## 🏛️ Mimari
+
+```
+OtpAuth.sln
+├── src/
+│   ├── OtpAuth.Domain          → Entity'ler (OtpCode). Dış bağımlılık yok.
+│   ├── OtpAuth.Application      → Soyutlamalar (ISmsSender, IJwtTokenGenerator, IAuthService), DTO'lar, Result.
+│   ├── OtpAuth.Infrastructure   → EF Core DbContext, Identity, JWT üretimi, AuthService, SMS gönderici (ÖzTek).
+│   ├── OtpAuth.Api              → .NET 9 Web API (AuthController), JWT auth, CORS, Swagger.
+│   └── OtpAuth.Client           → Blazor WASM + MudBlazor, layout'lar, AuthState yönetimi.
+└── tests/
+    └── OtpAuth.Tests            → xUnit birim testleri (SmsSender).
+```
+
+Bağımlılık yönü (içe doğru): `Api → Infrastructure → Application → Domain`
+
+## 🔄 Giriş Akışı
+
+```
+Kullanıcı telefonu girer
+        │  POST /api/auth/request-otp
+        ▼
+Sunucu kriptografik 6 haneli kod üretir → MSSQL'e yazar → SMS ile gönderir
+        │
+        ▼
+Kullanıcı kodu girer
+        │  POST /api/auth/verify-otp
+        ▼
+Kod doğruysa → JWT üretilir → Client localStorage'a yazar → oturum açılır → korumalı sayfa
+```
+
+## 🌐 API Uçları
 
 | Method | Yol | Koruma | Açıklama |
 |---|---|---|---|
-| POST | `/api/auth/request-otp` | Açık | Telefon için OTP üretir + SMS gönderir |
-| POST | `/api/auth/verify-otp` | Açık | Kodu doğrular, JWT döner |
-| GET  | `/api/auth/me` | 🔒 JWT | Token'daki kimliği döner (koruma örneği) |
+| `POST` | `/api/auth/request-otp` | Açık | Telefon için OTP üretir + SMS gönderir |
+| `POST` | `/api/auth/verify-otp` | Açık | Kodu doğrular, JWT döner |
+| `GET`  | `/api/auth/me` | 🔒 JWT | Token'daki kimliği döner (koruma örneği) |
 
-Client tarafında `AuthorizationMessageHandler`, giden her isteğe JWT'yi otomatik ekler ve
-sunucu **401** dönerse oturumu kapatıp login'e yönlendirir.
+---
 
-## Kurulum
+## 🚀 Hızlı Başlangıç
 
-### 1. Gereksinimler
-- .NET 9 SDK (kurulu)
-- MSSQL veritabanı — aşağıdaki seçeneklerden biri (Visual Studio 2022 kurarsanız LocalDB hazır gelir)
+### Gereksinimler
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- MSSQL (SQL Server Express veya LocalDB)
 
-### 2. Veritabanı seçenekleri (birini seçin)
-
-`appsettings.json` → `ConnectionStrings:DefaultConnection` değerini ortamınıza göre düzenleyin.
-
-**a) LocalDB** (en hafif — yönetici olarak tek kurulum)
-```powershell
-# Yönetici PowerShell'de:
-msiexec /i SqlLocalDB.msi /qn IACCEPTSQLLOCALDBLICENSETERMS=YES
-```
-Connection string:
-```
-Server=(localdb)\MSSQLLocalDB;Database=OtpAuthDb;Trusted_Connection=True;TrustServerCertificate=True
-```
-
-**b) SQL Server Express / SSMS** (varsayılan)
+### 1. Veritabanı bağlantısı
+`src/OtpAuth.Api/appsettings.json` → `ConnectionStrings:DefaultConnection` değerini ortamına göre ayarla:
 ```
 Server=.\SQLEXPRESS;Database=OtpAuthDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true
 ```
 
-### 3. Veritabanını oluşturun (migration zaten hazır)
+### 2. Veritabanını oluştur (migration hazır)
 ```powershell
 dotnet tool install --global dotnet-ef   # bir kez
 dotnet ef database update --project src/OtpAuth.Infrastructure --startup-project src/OtpAuth.Api
 ```
 
----
+### 3. Çalıştır
 
-## Çalıştırma
-
-İki projeyi aynı anda başlatın (VS2022'de: solution'a sağ tık → *Configure Startup Projects* → Multiple).
-
+**En kolay yol — tek tıkla** (API + Client birlikte):
 ```powershell
-# 1. terminal — API (https://localhost:7100, http://localhost:5100, Swagger: /swagger)
-dotnet run --project src/OtpAuth.Api
-
-# 2. terminal — Client (https://localhost:7200)
-dotnet run --project src/OtpAuth.Client
+.\baslat.ps1
 ```
 
-Tarayıcı: `https://localhost:7200` → otomatik `/login` sayfasına yönlenir.
+**veya iki ayrı terminal:**
+```powershell
+dotnet run --project src/OtpAuth.Api      # https://localhost:7100 (Swagger: /swagger)
+dotnet run --project src/OtpAuth.Client   # https://localhost:7200
+```
 
-> **SMS dokümanı henüz yok:** `appsettings.json` → `Sms:Enabled = false` iken kod gerçek SMS yerine
-> **API konsoluna** yazılır (`OTP üretildi => +90... : 123456`). Böylece akış uçtan uca test edilebilir.
+Tarayıcı: **`https://localhost:7200`** → otomatik `/login` sayfasına yönlenir.
 
----
-
-## SMS Entegrasyonu (tek dosya)
-
-GSM API dokümanı gelince **yalnızca** şu metodun içini doldurun:
-
-`src/OtpAuth.Infrastructure/Sms/SmsSender.cs → SendViaProviderAsync(...)`
-
-İçeride hazır `HttpClient`, `_options.BaseUrl`, `_options.ApiKey`, `_options.Sender` mevcut.
-`appsettings.json` → `Sms` bölümünü doldurup `Enabled = true` yapın. Başka hiçbir yeri değiştirmeniz gerekmez.
+> 💡 **SMS olmadan test:** `appsettings.json → Sms:Enabled = false` iken kod gerçek SMS yerine
+> **API konsoluna** yazılır (`OTP üretildi => +90... : 123456`). Akış uçtan uca SMS hesabı olmadan denenebilir.
 
 ---
 
-## Güvenlik Notları (prod öncesi)
-- `Jwt:SigningKey` değerini güçlü bir secret ile değiştirin (User Secrets / Key Vault).
-- OTP politikası `appsettings.json` → `Otp` (süre, maksimum deneme) üzerinden ayarlanır.
-- `request-otp` yanıtı numaranın kayıtlı olup olmadığını sızdırmaz (enumeration koruması).
-- OTP brute-force'a karşı `MaxAttempts` ile kilitlenir.
+## 📨 SMS Entegrasyonu (ÖzTek)
+
+SMS gönderimi `ISmsSender` arayüzü üzerinden soyutlanmıştır; referans implementasyon **ÖzTek Haberleşme** API'sidir (`src/OtpAuth.Infrastructure/Sms/SmsSender.cs`). Canlıya almak için yalnızca hesap bilgilerini gir:
+
+```json
+"Sms": {
+  "Enabled": true,
+  "BaseUrl": "http://www.ozteksms.com/panel/smsgonder1Npost.php",
+  "Kno": "<kullanıcı kodu>",
+  "Kulad": "<kullanıcı adı>",
+  "Sifre": "<şifre>",
+  "Gonderen": "<onaylı originatör>",
+  "Tur": "Normal"
+}
+```
+
+> Başka bir sağlayıcıya geçmek için yalnızca `SmsSender` sınıfını değiştirmek yeterlidir; OTP/JWT akışı etkilenmez.
+
+## 🧪 Testler
+
+```powershell
+dotnet test
+```
+SMS entegrasyonu, gerçek ağ/kimlik bilgisi olmadan sahte HTTP handler ile doğrulanır
+(numara dönüşümü, XML kurulumu, başarı/hata yanıtları, devre dışı modu, XML escape).
+
+---
+
+## 🔒 Güvenlik Notları
+
+- **Kriptografik kod üretimi** — `RandomNumberGenerator` ile tahmin edilemez 6 haneli kod
+- **Enumeration koruması** — `request-otp` yanıtı numaranın kayıtlı olup olmadığını sızdırmaz
+- **Brute-force koruması** — `MaxAttempts` aşılınca kod geçersiz kılınır
+- **Tek aktif kod** — yeni kod istenince önceki kodlar iptal edilir
+- **CORS** — geliştirmede localhost serbest, production'da yapılandırılmış origin'lere kilitli
+
+**Production öncesi:** `Jwt:SigningKey` ve SMS bilgilerini **User Secrets / ortam değişkeni / Key Vault**'a taşı (repoya gizli bilgi koyma).
+
+---
+
+<div align="center">
+
+Detaylı kurulum için **[KURULUM.md](KURULUM.md)** dosyasına bakın.
+
+</div>
